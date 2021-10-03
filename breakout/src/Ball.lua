@@ -62,9 +62,23 @@ function Ball:reset()
 end
 
 function Ball:update(dt)
+    -- new x,y position is equal to current x-pos + x-velocity * dt and y-pos + y-velocity * dt
     self.x = self.x + self.dx * dt
     self.y = self.y + self.dy * dt
 
+    -- Apply drag on the ball
+    if self.dx < 0 then
+        self.dx = self.dx + 0.001
+    else
+        self.dx = self.dx - 0.001
+    end   
+    
+    if self.dy < 0 then
+        self.dy = self.dy + 0.001
+    else
+        self.dy = self.dy - 0.001
+    end
+    
     -- allow ball to bounce off walls
     if self.x <= 0 then
         self.x = 0
@@ -90,4 +104,24 @@ function Ball:render()
     -- gBallFrames is a table of quads mapping to each individual ball skin in the texture
     love.graphics.draw(gTextures['main'], gFrames['balls'][self.skin],
         self.x, self.y)
+end
+
+function Ball:shrink()
+    self.height = self.height - 2
+    self.width = self.width - 2
+end
+
+function Ball:grow()
+    self.height = self.height - 4
+    self.width = self.width - 4
+end
+
+function Ball:slow()
+    self.dx = self.dx * .75
+    self.dy = self.dy * .75
+end
+
+function Ball:speedUp()
+    self.dx = self.dx * 1.5
+    self.dy = self.dy * 1.5
 end

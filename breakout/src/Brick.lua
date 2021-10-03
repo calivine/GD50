@@ -115,7 +115,7 @@ function Brick:hit()
 
     -- if we're at a higher tier than the base, we need to go down a tier
     -- if we're already at the lowest color, else just go down a color
-    if self.locked == false then
+    if not self:isLocked() then
         if self.tier > 0 then
             if self.color == 1 then
                 self.tier = self.tier - 1
@@ -145,11 +145,8 @@ end
     When the ball hits a brick run a rng and if the right number is chosen, spawn a powerup.
 ]]
 function Brick:powerup(dt)
-    if math.random(1,5) == 2 then
-        return true
-    else
-        return false
-    end
+    return true
+    -- return math.random(1,3) == 3
 end
 
 function Brick:update(dt)
@@ -171,7 +168,22 @@ end
     otherwise, some bricks would render over other bricks' particle systems.
 ]]
 function Brick:renderParticles()
-    if self.locked == false then
+    if self:isLocked() == false then
         love.graphics.draw(self.psystem, self.x + 16, self.y + 8)
     end
+end
+
+--[[
+    Unlocks a brick
+]]
+function Brick:unlock()
+    self.tier = 0
+    self.locked = false
+end
+
+--[[
+    Checks if Brick is locked
+]]
+function Brick:isLocked()
+    return self.locked
 end

@@ -165,3 +165,13 @@ function GenerateBricks(atlas)
     end
     return quads
 end
+
+function Logger(data)
+    local d = tostring(data)
+    love.filesystem.setIdentity('breakout')
+    if love.filesystem.exists('breakout_log.lst') then
+        love.filesystem.append('breakout_log.lst', tostring(d .. '\n'))
+    else
+        love.filesystem.write('breakout_log.lst', tostring(d .. '\n'))
+    end
+end

@@ -37,7 +37,17 @@ function ServeState:update(dt)
     self.ball.x = self.paddle.x + (self.paddle.width / 2) - 4
     self.ball.y = self.paddle.y - 8
 
+    
+
     if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') then
+        for k, brick in pairs(self.bricks) do
+            if brick.locked then
+                self.containsLocked =  true
+                break
+            else
+                self.containsLocked = false
+            end
+        end
         -- pass in all important state info to the PlayState
         gStateMachine:change('play', {
             paddle = self.paddle,
@@ -47,7 +57,8 @@ function ServeState:update(dt)
             highScores = self.highScores,
             ball = self.ball,
             level = self.level,
-            recoverPoints = self.recoverPoints
+            recoverPoints = self.recoverPoints,
+            containsLocked = self.containsLocked
         })
     end
 

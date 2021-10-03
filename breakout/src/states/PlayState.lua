@@ -39,9 +39,17 @@ function PlayState:enter(params)
     self.ball.dy = math.random(-50, -60)
 
     self.balls = {self.ball}
+    -- self.containsLocked = params.containsLocked
+    self.configs = 
+    {
+        ['containsLocked'] = params.containsLocked,
+        ['health'] = params.health,
+        ['score'] = params.score
+    }
 end
 
 function PlayState:update(dt)
+    -- Handle pausing the game
     if self.paused then
         if love.keyboard.wasPressed('space') then
             self.paused = false
@@ -71,7 +79,6 @@ function PlayState:update(dt)
             --
             -- tweak angle of bounce based on where it hits the paddle
             --
-    
             -- if we hit the paddle on its left side while moving left...
             if ball.x < self.paddle.x + (self.paddle.width / 2) and self.paddle.dx < 0 then
                 ball.dx = -50 + -(8 * (self.paddle.x + self.paddle.width / 2 - ball.x))
@@ -94,7 +101,7 @@ function PlayState:update(dt)
             if brick.inPlay and ball:collides(brick) then
 
                 -- add to score
-                self.score = self.score + (brick.tier * 200 + brick.color * 25)
+                self.configs['score'] = self.configs['score'] + (brick.tier * 200 + brick.color * 25)
                 self.upgradePoints = self.upgradePoints + (brick.tier * 200 + brick.color * 25)
                 if self.upgradePoints >= 2000 then
                     if self.paddle.size < 4 then
@@ -103,23 +110,24 @@ function PlayState:update(dt)
                     end
                     self.upgradePoints = 0
                 end
-                -- trigger the brick's hit function, which removes it from play
-                brick:hit()
 
-                if brick:powerup() and table.getn(self.balls) <= 2 then
+                -- Check to see if brick will spawn a powerup
+                if brick:powerup() and table.getn(self.balls) < 3 then
                     -- Spawn Powerup object and add to powerups list
-                    powerup = Powerup(brick.x, brick.y)
+                    powerup = Powerup(brick.x, brick.y, self.configs['containsLocked'])
                     self.powerups[table.getn(self.powerups) + 1] = powerup
                 end
 
+                -- trigger the brick's hit function, which removes it from play
+                brick:hit()
 
                 -- if we have enough points, recover a point of health
-                if self.score > self.recoverPoints then
+                if self.configs['score'] > self.recoverPoints then
                     -- can't go above 3 health
-                    self.health = math.min(3, self.health + 1)
+                    self.configs['health'] = math.min(3, self.configs['health'] + 1)
 
-                    -- multiply recover points by 2
-                    self.recoverPoints = math.min(100000, self.recoverPoints * 2)
+                    -- multiply recover points by 10
+                    self.recoverPoints = math.min(100000, self.recoverPoints * 10)
 
                     -- play recover sound effect
                     gSounds['recover']:play()
@@ -132,8 +140,8 @@ function PlayState:update(dt)
                     gStateMachine:change('victory', {
                         level = self.level,
                         paddle = self.paddle,
-                        health = self.health,
-                        score = self.score,
+                        health = self.configs['health'],
+                        score = self.configs['score'],
                         highScores = self.highScores,
                         ball = self.ball,
                         recoverPoints = self.recoverPoints
@@ -194,7 +202,7 @@ function PlayState:update(dt)
     for b, ball in pairs(self.balls) do
         -- if ball goes below bounds, revert to serve state and decrease health
         if ball.y >= VIRTUAL_HEIGHT then
-            self.health = self.health - 1
+            self.configs['health'] = self.configs['health'] - 1
             -- If paddle is larger than smallest paddle, decrease size.
             if self.paddle.size > 1 then
                 self.paddle.size = self.paddle.size - 1
@@ -202,17 +210,17 @@ function PlayState:update(dt)
             end
             gSounds['hurt']:play()
 
-            if self.health == 0 then
+            if self.configs['health'] == 0 then
                 gStateMachine:change('game-over', {
-                    score = self.score,
+                    score = self.configs['score'],
                     highScores = self.highScores
                 })
             else
                 gStateMachine:change('serve', {
                     paddle = self.paddle,
                     bricks = self.bricks,
-                    health = self.health,
-                    score = self.score,
+                    health = self.configs['health'],
+                    score = self.configs['score'],
                     highScores = self.highScores,
                     level = self.level,
                     recoverPoints = self.recoverPoints
@@ -224,21 +232,10 @@ function PlayState:update(dt)
     -- Loop through all active power ups 
     for p, powerup in pairs(self.powerups) do
         -- Check for collision with paddle
-        if powerup.y + 16 >= self.paddle.y and powerup.x >= self.paddle.x and powerup.x + 16 <= self.paddle.x + self.paddle.width then
-            if powerup.inPlay and table.getn(self.balls) <= 2 then
-                -- collision detected
-                -- play sound
-                gSounds['recover']:play()
-                for i = 0, 1 do
-                    new_ball = Ball(1)
-                    new_ball.x = VIRTUAL_WIDTH / 2 + math.random(100,200)
-                    new_ball.y = VIRTUAL_HEIGHT / 2
-                    new_ball.dx = math.random(-200,200)
-                    new_ball.dy = math.random(-50,50)
-                    self.balls[table.getn(self.balls) + 1] = new_ball
-                end
-                powerup.inPlay = false
-            end
+        if powerup:collide(self.paddle) then
+            -- gSounds['recover']:play()
+            powerup:call(self.bricks, self.balls, self.configs)
+            powerup:hit()
         end
     end
 
@@ -260,6 +257,7 @@ function PlayState:update(dt)
     end
 end
 
+-- Render everything on the screen
 function PlayState:render()
     -- render bricks
     for k, brick in pairs(self.bricks) do
@@ -282,8 +280,8 @@ function PlayState:render()
         ball:render()
     end
     
-    renderScore(self.score)
-    renderHealth(self.health)
+    renderScore(self.configs['score'])
+    renderHealth(self.configs['health'])
 
     -- pause text, if paused
     if self.paused then

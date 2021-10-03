@@ -47,7 +47,8 @@ function LevelMaker.createMap(level)
     -- highest color of the highest tier, no higher than 5
     local highestColor = math.min(5, level % 5 + 3)
 
-    local addLocked = 1
+    local addLocked = math.random(1,10)
+    
     local locked = false
 
     -- lay out bricks such that they touch each other and fill the space
@@ -75,27 +76,6 @@ function LevelMaker.createMap(level)
         local solidTier = math.random(0, highestTier)
 
         for x = 1, numCols do
-            if addLocked == 1 and locked == false then
-                b = Brick(
-                    -- x-coordinate
-                    (x-1)
-                    * 32
-                    + 8
-                    + (13 - numCols) * 16,
-
-                    -- y-coordinate
-                    y * 16
-                )
-                b.color = 6
-                b.tier = 1
-                b.locked = true
-                table.insert(bricks, b)
-
-                locked = true
-
-                goto continue
-            end
-
             -- if skipping is turned on and we're on a skip iteration...
             if skipPattern and skipFlag then
                 -- turn skipping off for the next iteration
@@ -118,6 +98,18 @@ function LevelMaker.createMap(level)
                 -- y-coordinate
                 y * 16                  -- just use y * 16, since we need top padding anyway
             )
+
+            -- random check to see if we're adding a Locked brick.
+            if not locked then
+                if addLocked == 2 then
+                    b.locked = true
+                    b.color = 6
+                    b.tier = 1
+                    locked = true
+                    table.insert(bricks, b)
+                    goto continue
+                end
+            end
 
             -- if we're alternating, figure out which color/tier we're on
             if alternatePattern and alternateFlag then
